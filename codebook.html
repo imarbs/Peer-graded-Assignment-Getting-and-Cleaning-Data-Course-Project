@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title></title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<hr/>
+
+<p>###Backgroungd and Data Source</p>
+
+<p>One of the most exciting areas in all of data science right now is wearable computing - see for example this article . Companies like Fitbit, Nike, and Jawbone Up are racing to develop the most advanced algorithms to attract new users. The data linked to, from the course website, represent data collected from the accelerometers from the Samsung Galaxy S smartphone. A full description is available at the site where the data was obtained:</p>
+
+<p><a href="http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones">http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones</a></p>
+
+<p>Here are the data for the project:</p>
+
+<p><a href="https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip">https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip</a></p>
+
+<p>###Process towards achieving the final Tidy dataset</p>
+
+<p>Through the R script called <code>run_analysis.R</code> the following steps were performed (as indicated in the script) in order to obtain the final Tidy dataset:</p>
+
+<ol>
+<li>Merge the training and the test sets to create one data set.</li>
+</ol>
+
+<pre><code>        ###bind rows using dplyr, in the order of (train, test)
+
+        subject &lt;- bind_rows(train_subject, test_subject)
+        colnames(subject) &lt;- &quot;subject&quot;
+
+        activity &lt;- bind_rows(train_activity, test_activity)
+        colnames(activity) &lt;- &quot;activity&quot;
+
+        dt &lt;- bind_rows(train_dt, test_dt)
+
+        ###bind the columns of the three tibbles
+
+        dt_all &lt;- bind_cols(subject, activity, dt)
+</code></pre>
+
+<ol>
+<li><p>Extract only the measurements on the mean and standard deviation for each measurement.</p>
+
+<pre><code>    features &lt;- read.table(&quot;./features.txt&quot;)
+
+    mean_sd_index &lt;- grep(&quot;mean\\(\\)|std\\(\\)&quot;, as.vector(features[,2]))
+
+    dt_mean_sd &lt;- dt_all[, c(1,2, mean_sd_index + 2)]
+</code></pre></li>
+<li><p>Use descriptive activity names to name the activities in the data set</p>
+
+<pre><code>    activitynames &lt;- as_tibble(read.table(&quot;./activity_labels.txt&quot;))
+
+    colnames(activitynames) &lt;- c(&quot;activity&quot;, &quot;activityname&quot;)
+
+    dt_activity &lt;- dt_mean_sd %&gt;% left_join(activitynames, by = &quot;activity&quot;)
+
+    ###rearrange the columns to put activitynames in the 2nd column
+    dt_activity &lt;- dt_activity %&gt;% select(subject, activity, activityname, 
+                        everything()) %&gt;% select(-activity)
+</code></pre></li>
+<li><p>Appropriately labels the data set with descriptive variable names.</p>
+
+<pre><code>    names(dt_activity) &lt;- c(names(dt_activity[1:2]),as.vector(features[mean_sd_index,2]))
+</code></pre></li>
+<li><p>From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.</p>
+
+<pre><code>    dt_tidy2 &lt;- dt_activity %&gt;% group_by(subject, activityname) %&gt;% summarise_all(mean) %&gt;% gather(&quot;Measurement&quot;, &quot;Average&quot;, -subject, -activityname )
+</code></pre></li>
+</ol>
+
+<p>###Tidy dataset variable list and descriptions</p>
+
+<table><thead>
+<tr>
+<th>Variables</th>
+<th>Description</th>
+<th>Remarks</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Subject</td>
+<td>ID the subject who performed the activity for each window sample</td>
+<td>Its range is from 1 to 30.</td>
+</tr>
+<tr>
+<td>activityname</td>
+<td>Activity Name</td>
+<td>e.g. Walking, Standing, etc.</td>
+</tr>
+<tr>
+<td>Measurement</td>
+<td>Name of Feature being measured</td>
+<td>Pls. refer to the dataset for the full list and description of the features</td>
+</tr>
+<tr>
+<td>Average</td>
+<td>Average value of the measurement</td>
+<td></td>
+</tr>
+</tbody></table>
+
+<hr/>
+
+</body>
+
+</html>
